@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Baby Translator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Playfair+Display:wght@500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --cream: #FFF8F0;
+    --warm-white: #FFFDF9;
+    --blush: #F4C2C2;
+    --soft-coral: #F7A399;
+    --lavender: #C5B4E3;
+    --sky: #A8D8EA;
+    --mint: #B5EAD7;
+    --honey: #FFD966;
+    --peach: #FFDAB9;
+    --deep-plum: #4A2040;
+    --soft-navy: #2C3E6B;
+    --text: #3D2B3D;
+    --text-light: #7A6A7A;
+    --shadow: rgba(74, 32, 64, 0.08);
+  }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(165, 216, 234, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(197, 180, 227, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(244, 194, 194, 0.1) 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 20px 20px 40px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 24px 0 16px;
+  }
+
+  .header-icon {
+    font-size: 48px;
+    margin-bottom: 8px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--deep-plum);
+    letter-spacing: -0.5px;
+  }
+
+  .header p {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  /* Status Card */
+  .status-card {
+    background: white;
+    border-radius: 24px;
+    padding: 28px 24px;
+    margin: 16px 0;
+    box-shadow: 0 4px 24px var(--shadow), 0 1px 3px rgba(0,0,0,0.04);
+    text-align: center;
+    transition: all 0.4s ease;
+  }
+
+  .status-card.listening {
+    box-shadow: 0 4px 32px rgba(247, 163, 153, 0.25), 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .status-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-light);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .status-message {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--deep-plum);
+    line-height: 1.4;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Visualizer */
+  .visualizer-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 60px;
+    margin: 16px 0;
+  }
+
+  .viz-bar {
+    width: 4px;
+    background: var(--lavender);
+    border-radius: 4px;
+    transition: height 0.1s ease;
+    height: 8px;
+  }
+
+  .viz-bar.active {
+    animation: vizPulse 0.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes vizPulse {
+    0% { height: 8px; }
+    100% { height: var(--target-h, 40px); }
+  }
+
+  /* Big Listen Button */
+  .listen-btn-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0 24px;
+  }
+
+  .listen-btn {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    background: linear-gradient(135deg, var(--soft-coral) 0%, var(--blush) 50%, var(--lavender) 100%);
+    box-shadow: 0 8px 32px rgba(247, 163, 153, 0.35), 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: white;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .listen-btn:active {
+    transform: scale(0.95);
+  }
+
+  .listen-btn.recording {
+    background: linear-gradient(135deg, #e85d5d 0%, var(--soft-coral) 100%);
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(247, 163, 153, 0.5), 0 8px 32px rgba(247, 163, 153, 0.35); }
+    70% { box-shadow: 0 0 0 20px rgba(247, 163, 153, 0), 0 8px 32px rgba(247, 163, 153, 0.35); }
+    100% { box-shadow: 0 0 0 0 rgba(247, 163, 153, 0), 0 8px 32px rgba(247, 163, 153, 0.35); }
+  }
+
+  .listen-btn .btn-icon {
+    font-size: 36px;
+    margin-bottom: 2px;
+  }
+
+  .listen-btn .btn-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Result Card */
+  .result-card {
+    background: white;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px var(--shadow);
+    margin-bottom: 16px;
+    animation: slideUp 0.5s ease;
+    display: none;
+  }
+
+  .result-card.visible {
+    display: block;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-header {
+    padding: 24px 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .result-emoji {
+    font-size: 48px;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cream);
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  .result-title-group h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--deep-plum);
+    font-weight: 700;
+  }
+
+  .result-sound {
+    font-size: 14px;
+    color: var(--soft-coral);
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .result-confidence {
+    display: inline-block;
+    background: var(--mint);
+    color: #2d6a4f;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+
+  .result-body {
+    padding: 0 24px 24px;
+  }
+
+  .result-body p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .result-tips {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .result-tips h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-light);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .tip-item:last-child { margin-bottom: 0; }
+
+  .tip-icon {
+    flex-shrink: 0;
+    font-size: 14px;
+    margin-top: 1px;
+  }
+
+  /* Error / Permission Card */
+  .permission-card {
+    background: white;
+    border-radius: 24px;
+    padding: 28px 24px;
+    margin: 16px 0;
+    box-shadow: 0 4px 24px var(--shadow);
+    text-align: center;
+    display: none;
+  }
+
+  .permission-card.visible { display: block; }
+
+  .permission-card .perm-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  .permission-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--deep-plum);
+    margin-bottom: 8px;
+  }
+
+  .permission-card p {
+    font-size: 14px;
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .permission-card .steps {
+    text-align: left;
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .permission-card .steps .step {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .permission-card .steps .step:last-child { margin-bottom: 0; }
+
+  .step-num {
+    background: var(--lavender);
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .retry-btn {
+    background: linear-gradient(135deg, var(--soft-coral), var(--blush));
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Sound Reference */
+  .reference-section {
+    margin-top: auto;
+    padding-top: 24px;
+  }
+
+  .ref-toggle {
+    width: 100%;
+    background: none;
+    border: 2px dashed rgba(197, 180, 227, 0.4);
+    border-radius: 16px;
+    padding: 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-light);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.3s;
+  }
+
+  .ref-toggle:hover {
+    border-color: var(--lavender);
+    color: var(--deep-plum);
+  }
+  .ref-grid {
+    display: none;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .ref-grid.open {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    animation: slideUp 0.4s ease;
+  }
+
+  .ref-item {
+    background: white;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .ref-item .ref-sound {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--deep-plum);
+  }
+
+  .ref-item .ref-meaning {
+    font-size: 11px;
+    color: var(--soft-coral);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 2px 0 6px;
+  }
+
+  .ref-item .ref-desc {
+    font-size: 12px;
+    color: var(--text-light);
+    line-height: 1.4;
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 20px;
+    line-height: 1.5;
+    opacity: 0.7;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="header-icon">👶</div>
+    <h1>Baby Translator</h1>
+    <p>Decode your baby's cries with Dunstan Baby Language</p>
+  </div>
+
+  <!-- Status -->
+  <div class="status-card" id="statusCard">
+    <div class="status-label">Status</div>
+    <div class="status-message" id="statusMsg">Tap the button to start listening</div>
+  </div>
+
+  <!-- Visualizer -->
+  <div class="visualizer-container" id="visualizer"></div>
+
+  <!-- Listen Button -->
+  <div class="listen-btn-wrap">
+    <button class="listen-btn" id="listenBtn" onclick="toggleListening()">
+      <span class="btn-icon" id="btnIcon">🎙️</span>
+      <span class="btn-label" id="btnLabel">Listen</span>
+    </button>
+  </div>
+
+  <!-- Permission Error -->
+  <div class="permission-card" id="permCard">
+    <div class="perm-icon">🔒</div>
+    <h3>Microphone Access Needed</h3>
+    <p>This app needs microphone access to hear your baby's cries. Claude's web viewer blocks mic access, so here's how to use it:</p>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <span>Tap the <strong>download</strong> or <strong>share</strong> icon to save this page</span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span>Open the saved HTML file in <strong>Safari</strong> or <strong>Chrome</strong></span>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span>When prompted, tap <strong>"Allow"</strong> for microphone access</span>
+      </div>
+    </div>
+    <button class="retry-btn" onclick="tryMicAccess()">Try Again Here</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <div class="result-emoji" id="resultEmoji">🍼</div>
+      <div class="result-title-group">
+        <h2 id="resultTitle">Hungry</h2>
+        <div class="result-sound" id="resultSound">Sound: "Neh"</div>
+        <div class="result-confidence" id="resultConf">High Match</div>
+      </div>
+    </div>
+    <div class="result-body">
+      <p id="resultDesc"></p>
+      <div class="result-tips">
+        <h3>What to try</h3>
+        <div id="resultTips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reference -->
+  <div class="reference-section">
+    <button class="ref-toggle" onclick="toggleRef()">📖 Dunstan Baby Language Guide</button>
+    <div class="ref-grid" id="refGrid">
+      <div class="ref-item">
+        <div class="ref-sound">"Neh"</div>
+        <div class="ref-meaning">Hungry</div>
+        <div class="ref-desc">Sucking reflex triggers tongue to roof of mouth</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-sound">"Owh"</div>
+        <div class="ref-meaning">Tired</div>
+        <div class="ref-desc">Yawn reflex creates an oval mouth shape</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-sound">"Heh"</div>
+        <div class="ref-meaning">Discomfort</div>
+        <div class="ref-desc">Skin reflex from feeling hot, cold, or wet</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-sound">"Eairh"</div>
+        <div class="ref-meaning">Gas Pain</div>
+        <div class="ref-desc">Lower belly pushing creates a strained sound</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-sound">"Eh"</div>
+        <div class="ref-meaning">Need to Burp</div>
+        <div class="ref-desc">Air trapped in chest produces a short reflex sound</div>
+      </div>
+    </div>
+  </div>
+  <div class="disclaimer">
+    Based on Dunstan Baby Language research. This is a parenting aid, not a medical tool. Always consult your pediatrician for health concerns.
+  </div>
+</div>
+
+<script>
+  // ===== CRY DATABASE =====
+  const cryDB = {
+    neh: {
+      title: "Hungry",
+      emoji: "🍼",
+      sound: '"Neh"',
+      desc: "Your baby is signaling hunger. The sucking reflex pushes the tongue to the roof of the mouth, creating this distinctive 'neh' sound. It often appears as a soft, rhythmic precry before escalating.",
+      tips: [
+        { icon: "🤱", text: "Try breastfeeding or offering a bottle" },
+        { icon: "👀", text: "Look for rooting — turning head, opening mouth, sucking on hands" },
+        { icon: "⏰", text: "Note the time to spot feeding patterns" }
+      ],
+      freqRange: [250, 500],
+      pattern: "rhythmic"
+    },
+    owh: {
+      title: "Tired / Sleepy",
+      emoji: "😴",
+      sound: '"Owh"',
+      desc: "Your baby is telling you they're tired. The yawn reflex creates an oval mouth shape that produces this round, open 'owh' sound. Catching it early means easier settling.",
+      tips: [
+        { icon: "🌙", text: "Move to a calm, dim environment" },
+        { icon: "🤗", text: "Swaddle and hold close — gentle rocking helps" },
+        { icon: "🎵", text: "White noise or soft humming can assist settling" }
+      ],
+      freqRange: [150, 350],
+      pattern: "long_sustained"
+    },
+    heh: {
+      title: "Physical Discomfort",
+      emoji: "😣",
+      sound: '"Heh"',
+      desc: "Something is physically bothering your baby — too hot, too cold, a wet diaper, or an uncomfortable position. The skin reflex produces this breathy 'heh' sound.",
+      tips: [
+        { icon: "🩲", text: "Check the diaper first" },
+        { icon: "🌡️", text: "Feel their chest or back — adjust clothing layers" },
+        { icon: "🔄", text: "Try a new position or remove irritating tags/seams" }
+      ],
+      freqRange: [300, 600],
+      pattern: "breathy"
+    },
+    eairh: {
+      title: "Lower Gas / Belly Pain",
+      emoji: "💨",
+      sound: '"Eairh"',
+      desc: "Your baby is experiencing lower abdominal discomfort from trapped gas. The straining of belly muscles creates this grunting, strained sound. You may notice a scrunched face and drawn-up knees.",
+      tips: [
+        { icon: "🦵", text: "Bicycle their legs gently to help move gas" },
+        { icon: "💆", text: "Try gentle clockwise tummy massage" },
+        { icon: "🤱", text: "Hold belly-down across your forearm (colic hold)" }
+      ],
+      freqRange: [200, 450],
+      pattern: "strained"
+    },
+    eh: {
+      title: "Needs to Burp",
+      emoji: "🫧",
+      sound: '"Eh"',
+      desc: "Air is trapped in your baby's chest and they need help releasing it. This short, repetitive 'eh' sound comes from the chest reflex. It often appears during or shortly after feeding.",
+      tips: [
+        { icon: "🤚", text: "Pat or rub their back gently while upright" },
+        { icon: "⬆️", text: "Try over-the-shoulder or sitting-up burp positions" },
+        { icon: "⏸️", text: "Pause feeding midway for a burp break" }
+      ],
+      freqRange: [350, 600],
+      pattern: "short_repetitive"
+    }
+  };
+
+  // ===== STATE =====
+  let isListening = false;
+  let audioContext = null;
+  let analyser = null;
+  let mediaStream = null;
+  let animFrame = null;
+  let listenTimer = null;
+  let audioDataBuffer = [];
+
+  // ===== VISUALIZER SETUP =====
+  const vizContainer = document.getElementById('visualizer');
+  const barCount = 32;
+  for (let i = 0; i < barCount; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'viz-bar';
+    bar.style.setProperty('--target-h', `${12 + Math.random() * 36}px`);
+    bar.style.animationDelay = `${i * 0.04}s`;
+    vizContainer.appendChild(bar);
+  }
+  const vizBars = vizContainer.querySelectorAll('.viz-bar');
+
+  // ===== MICROPHONE =====
+  async function tryMicAccess() {
+    document.getElementById('permCard').classList.remove('visible');
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100
+        }
+      });
+      // Success! Start analysis
+      startAudioAnalysis();
+      return true;
+    } catch (err) {
+      console.error('Mic access error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        showPermissionCard();
+      } else if (err.name === 'NotFoundError') {
+        setStatus("No microphone found on this device.");
+      } else if (err.name === 'NotSupportedError' || err.name === 'SecurityError') {
+        showPermissionCard();
+      } else {
+        showPermissionCard();
+      }
+      return false;
+    }
+  }
+
+  function showPermissionCard() {
+    document.getElementById('permCard').classList.add('visible');
+    setStatus("Microphone access required");
+    stopListeningUI();
+  }
+
+  // ===== AUDIO ANALYSIS =====
+  function startAudioAnalysis() {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
+
+    const source = audioContext.createMediaStreamSource(mediaStream);
+    source.connect(analyser);
+
+    isListening = true;
+    document.getElementById('listenBtn').classList.add('recording');
+    document.getElementById('btnIcon').textContent = '⏹️';
+    document.getElementById('btnLabel').textContent = 'Stop';
+    document.getElementById('statusCard').classList.add('listening');
+    setStatus("Listening... hold phone near baby");
+    document.getElementById('resultCard').classList.remove('visible');
+
+    audioDataBuffer = [];
+    updateVisualizer();
+
+    // Collect data for 5 seconds then analyze
+    listenTimer = setTimeout(() => {
+      analyzeAndPresent();
+    }, 5000);
+  }
+
+  function updateVisualizer() {
+    if (!isListening || !analyser) return;
+
+const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(dataArray);
+
+    // Store for analysis
+    audioDataBuffer.push(Array.from(dataArray));
+
+    // Update bars
+    const step = Math.floor(bufferLength / barCount);
+    for (let i = 0; i < barCount; i++) {
+      const val = dataArray[i * step] || 0;
+      const h = Math.max(4, (val / 255) * 56);
+      vizBars[i].style.height = `${h}px`;
+      vizBars[i].style.background = val > 150
+        ? 'var(--soft-coral)'
+        : val > 80
+          ? 'var(--lavender)'
+          : 'var(--sky)';
+    }
+
+    // Check if there's actually sound
+    const avg = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
+    if (avg < 5 && audioDataBuffer.length > 20) {
+      setStatus("Listening... very quiet — move closer to baby");
+    } else if (avg > 15) {
+      setStatus("Listening... hearing sounds, analyzing...");
+    }
+
+    animFrame = requestAnimationFrame(updateVisualizer);
+  }
+
+  // ===== ANALYSIS =====
+  function analyzeAndPresent() {
+    if (audioDataBuffer.length === 0) {
+      setStatus("Didn't hear enough sound. Try again closer to baby.");
+      stopListeningUI();
+      return;
+    }
+
+    // Compute spectral features
+    const avgSpectrum = new Float32Array(audioDataBuffer[0].length);
+    audioDataBuffer.forEach(frame => {
+      frame.forEach((v, i) => { avgSpectrum[i] += v; });
+    });
+    avgSpectrum.forEach((_, i) => { avgSpectrum[i] /= audioDataBuffer.length; });
+
+    const totalEnergy = avgSpectrum.reduce((a, b) => a + b, 0);
+    if (totalEnergy < 500) {
+      setStatus("Very quiet recording. Try again when baby is crying.");
+      stopListeningUI();
+      return;
+    }
+
+    // Frequency band analysis
+    const binHz = (audioContext.sampleRate / 2) / avgSpectrum.length;
+    const lowEnergy = sumRange(avgSpectrum, 0, Math.floor(300 / binHz));
+    const midEnergy = sumRange(avgSpectrum, Math.floor(300 / binHz), Math.floor(800 / binHz));
+    const highEnergy = sumRange(avgSpectrum, Math.floor(800 / binHz), Math.floor(2000 / binHz));
+    const veryHighEnergy = sumRange(avgSpectrum, Math.floor(2000 / binHz), avgSpectrum.length);
+
+    // Rhythm analysis (energy variance over time)
+    const frameEnergies = audioDataBuffer.map(f => f.reduce((a, b) => a + b, 0));
+    const energyVariance = variance(frameEnergies);
+    const maxEnergy = Math.max(...frameEnergies);
+    const avgEnergy = frameEnergies.reduce((a, b) => a + b, 0) / frameEnergies.length;
+
+    // Classify based on spectral + temporal features
+    const scores = {};
+
+    // NEH (hungry): mid-range dominant, rhythmic
+    scores.neh = (midEnergy / totalEnergy) * 40 + (energyVariance > 5000 ? 20 : 0) + (lowEnergy / totalEnergy) * 15;
+
+    // OWH (tired): low frequency dominant, sustained/long sounds
+    scores.owh = (lowEnergy / totalEnergy) * 45 + (energyVariance < 3000 ? 25 : 0);
+
+    // HEH (discomfort): breathy, higher frequencies, moderate energy
+    scores.heh = (highEnergy / totalEnergy) * 35 + (veryHighEnergy / totalEnergy) * 20 + (energyVariance > 3000 && energyVariance < 8000 ? 15 : 0);
+
+    // EAIRH (gas): strained, mid-low, high variance (grunt patterns)
+    scores.eairh = (lowEnergy / totalEnergy) * 25 + (midEnergy / totalEnergy) * 20 + (energyVariance > 8000 ? 25 : 0);
+
+    // EH (burp): short bursts, higher mid, very high variance
+    scores.eh = (midEnergy / totalEnergy) * 25 + (highEnergy / totalEnergy) * 20 + (energyVariance > 10000 ? 25 : 5);
+
+    // Find best match
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const best = sorted[0][0];
+    const bestScore = sorted[0][1];
+    const secondScore = sorted[1][1];
+
+    const confidence = bestScore > secondScore * 1.3 ? "High Match" : "Moderate Match";
+
+    showResult(best, confidence);
+    stopListeningUI();
+  }
+
+  function sumRange(arr, start, end) {
+    let s = 0;
+    for (let i = start; i < Math.min(end, arr.length); i++) s += arr[i];
+    return s;
+  }
+
+  function variance(arr) {
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    return arr.reduce((sum, v) => sum + (v - mean) ** 2, 0) / arr.length;
+  }
+
+  // ===== UI UPDATES =====
+  function showResult(key, confidence) {
+    const data = cryDB[key];
+    document.getElementById('resultEmoji').textContent = data.emoji;
+    document.getElementById('resultTitle').textContent = data.title;
+    document.getElementById('resultSound').textContent = `Sound: ${data.sound}`;
+    document.getElementById('resultConf').textContent = confidence;
+    document.getElementById('resultDesc').textContent = data.desc;
+
+    const tipsEl = document.getElementById('resultTips');
+    tipsEl.innerHTML = data.tips.map(t =>
+      `<div class="tip-item"><span class="tip-icon">${t.icon}</span><span>${t.text}</span></div>`
+    ).join('');
+
+    document.getElementById('resultCard').classList.add('visible');
+    setStatus(`Detected: ${data.title} ${data.emoji}`);
+  }
+
+  function setStatus(msg) {
+    document.getElementById('statusMsg').textContent = msg;
+  }
+
+  function stopListeningUI() {
+    isListening = false;
+    if (animFrame) cancelAnimationFrame(animFrame);
+    if (listenTimer) clearTimeout(listenTimer);
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(t => t.stop());
+      mediaStream = null;
+    }
+    if (audioContext && audioContext.state !== 'closed') {
+      audioContext.close();
+    }
+
+    document.getElementById('listenBtn').classList.remove('recording');
+    document.getElementById('btnIcon').textContent = '🎙️';
+    document.getElementById('btnLabel').textContent = 'Listen';
+    document.getElementById('statusCard').classList.remove('listening');
+
+    vizBars.forEach(b => { b.style.height = '8px'; b.style.background = 'var(--lavender)'; });
+  }
+
+  // ===== MAIN TOGGLE =====
+  async function toggleListening() {
+    if (isListening) {
+      // Manual stop — analyze what we have
+      if (listenTimer) clearTimeout(listenTimer);
+      analyzeAndPresent();
+    } else {
+      const ok = await tryMicAccess();
+    }
+  }
+
+  function toggleRef() {
+    document.getElementById('refGrid').classList.toggle('open');
+  }
+</script>
+
+</body>
+</html>
